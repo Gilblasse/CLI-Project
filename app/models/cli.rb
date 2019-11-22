@@ -4,7 +4,7 @@ class CLI
 	def run
 		puts
 		puts "========================="
-		puts "IMBD 250 TOP RATED MOVIES"
+		puts "IMBD 250 TOP RATED MOVIES!"
 		puts "========================="
 		puts
 		Scraper.new(BASE_PATH)
