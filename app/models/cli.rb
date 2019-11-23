@@ -34,7 +34,18 @@ class CLI
 		Movie.all.each_with_index do |movie,i| 
 			puts "#{i+1}. #{movie.title} ------ (#{movie.year})"
 		end
-		Scraper.movie_details(selected_movie)
+		display_selected_movie
+	end
+
+	def display_selected_movie
+		movie = Scraper.movie_details(selected_movie)
+		puts "\n#{movie.title.upcase}"
+		puts movie.subtext
+		puts "#{Rainbow("Summary:").magenta} #{movie.summary}"
+		puts "#{Rainbow("Top 3 Actors:").magenta} #{movie.stars.join(", ")}"
+		puts "#{Rainbow("Directors:").magenta} #{movie.directors.join(", ")}"
+
+
 	end
 
 	def selected_movie

@@ -29,15 +29,16 @@ class Scraper
 		html_bio = open("https://www.imdb.com"+ movie_obj.url)
 		doc_bio = Nokogiri::HTML(html_bio)
 		movie_details = doc_bio.css("#title-overview-widget div.plot_summary")
-		self.update_movie_attr(movie_obj,movie_details)
+		movie_subtext = doc_bio.css("#title-overview-widget .titleBar")
+		self.update_movie_attr(movie_obj,movie_details,movie_subtext)
 	end
 	
-	def self.update_movie_attr(movie_obj,details)
-		binding.pry
+	def self.update_movie_attr(movie_obj,details,subtext)
 		movie_obj.summary = details.css('.summary_text').text.strip
-		movie_obj.director = details.css('.credit_summary_item a').first.text
-		movie_obj.stars = details.css('.summary_text').text.strip
-		movie_obj.film_rating = details.css('.summary_text').text.strip
+		movie_obj.directors = details.css('.credit_summary_item').first.css('a').text.split(",")
+		movie_obj.stars = details.css('.credit_summary_item')[2].text.strip.split(/[,|:\n]/)[2...-2].map{|e|e.strip}
+		movie_obj.subtext = subtext.css('.subtext').text.split(/[|]/).map{|e| e.strip}.join(" | ").gsub(/\n/,"")
+		movie_obj
 	end
 
 end

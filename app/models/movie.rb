@@ -1,22 +1,12 @@
 class Movie
-	attr_accessor :title, :year, :url, :rating,:summary,:director,:stars,:film_rating
+	attr_accessor :title, :year, :url, :rating,:summary,:directors,:stars,:film_rating,:subtext
 	@@all = []
 
 	def initialize(movie_hash)
 		movie_hash.each do |k,v| 
 			self.send("#{k}=",v)
 		end
-		@directors = []
-		@star = []
 		@@all << self
-	end
-
-	def directors=(director)
-		@directors << director
-	end
-
-	def stars=(star)
-		@stars << star
 	end
 
 	def self.all
