@@ -5,7 +5,9 @@ def reload
 end
 
 #examples:
-CLI.new.run
+cli = CLI.new
+cli.run
+cli.menu
 
 
 # binding.pry

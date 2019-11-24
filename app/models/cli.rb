@@ -2,13 +2,11 @@ class CLI
 	BASE_PATH = "https://www.imdb.com/chart/top"
 
 	def run
-		puts
 		puts "========================="
-		puts "IMBD 250 TOP RATED MOVIES!"
+		puts "\nIMBD 250 TOP RATED MOVIES!"
 		puts "========================="
 		puts
 		Scraper.new(BASE_PATH)
-		menu
 	end
 
 	def menu
@@ -42,10 +40,8 @@ class CLI
 		puts "\n#{movie.title.upcase}"
 		puts movie.subtext
 		puts "#{Rainbow("Summary:").magenta} #{movie.summary}"
-		puts "#{Rainbow("Top 3 Actors:").magenta} #{movie.stars.join(", ")}"
-		puts "#{Rainbow("Directors:").magenta} #{movie.directors.join(", ")}"
-
-
+		puts "#{Rainbow("Top 3 Actors:").magenta} #{movie.stars}"
+		puts "#{Rainbow("Directors:").magenta} #{movie.directors}"
 	end
 
 	def selected_movie

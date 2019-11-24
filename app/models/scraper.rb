@@ -35,10 +35,32 @@ class Scraper
 	
 	def self.update_movie_attr(movie_obj,details,subtext)
 		movie_obj.summary = details.css('.summary_text').text.strip
-		movie_obj.directors = details.css('.credit_summary_item').first.css('a').text.split(",")
-		movie_obj.stars = details.css('.credit_summary_item')[2].text.strip.split(/[,|:\n]/)[2...-2].map{|e|e.strip}
+		movie_obj.directors = details.css('.credit_summary_item h4 + a')[0].text
+		movie_obj.stars = details.css('.credit_summary_item')[2].css("a")[0...-1].map{|e|e.text}.zip(
+			details.css('.credit_summary_item a').map{|e| e['href']}[0...-1]
+		)
 		movie_obj.subtext = subtext.css('.subtext').text.split(/[|]/).map{|e| e.strip}.join(" | ").gsub(/\n/,"")
+		# binding.pry
 		movie_obj
+	end
+
+	def self.start_scraping_stars(url)
+			html = open("https://www.imdb.com#{url}")
+			doc = Nokogiri::HTML(html)
+			self.initialize_star(doc)
+	end
+
+	def self.generate_stars_hash(doc)
+		{
+			name: doc.css(".itemprop")[0].text,
+			subtext: doc.css(".itemprop")[1..-1].text.gsub(/(?!^\n)\n/," | ")
+		}
+	end
+
+	def self.initialize_star(doc)
+		stars_hash = self.generate_stars_hash(doc)
+		star = Star.new(stars_hash)
+		star
 	end
 
 end
