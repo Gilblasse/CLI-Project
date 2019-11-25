@@ -1,5 +1,5 @@
 class Movie
-	attr_accessor :title, :year, :url, :rating,:summary,:directors,:stars,:film_rating,:subtext
+	attr_accessor :title, :year, :url, :rating,:summary,:director,:stars,:film_rating,:subtext,:image,:trailer,:play_movie
 	@@all = []
 
 	def initialize(movie_hash)

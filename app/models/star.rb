@@ -1,5 +1,5 @@
 class Star
-	attr_accessor :name, :url, :bio,:summary,:subtext
+	attr_accessor :name, :url, :bio,:summary,:subtext,:born,:known_for
 	@@all = []
 
 	def initialize(movie_hash)
