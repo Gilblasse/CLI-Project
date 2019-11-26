@@ -30,10 +30,11 @@ class Scraper
 		doc_bio = Nokogiri::HTML(html_bio)
 		movie_details = doc_bio.css("#title-overview-widget div.plot_summary")
 		movie_subtext = doc_bio.css("#title-overview-widget .titleBar")
-		self.update_movie_attr(movie_obj,movie_details,movie_subtext,doc_bio)
+		trailer = doc_bio.css("#title-overview-widget .slate a")[0].nil? ? nil : doc_bio
+		self.update_movie_attr(movie_obj,movie_details,movie_subtext,trailer)
 	end
 	
-	def self.update_movie_attr(movie_obj,details,subtext,doc_bio)
+	def self.update_movie_attr(movie_obj,details,subtext,trailer)
 		movie_obj.summary = details.css('.summary_text').text.strip
 		movie_obj.director = [details.css('.credit_summary_item h4 + a')[0].text].push(
 			details.css('.credit_summary_item h4 + a')[0]['href']
@@ -42,9 +43,8 @@ class Scraper
 			details.css('.credit_summary_item')[2].css("a")[0...-1].map{|e|e['href']}
 		)
 		movie_obj.subtext = subtext.css('.subtext').text.split(/[|]/).map{|e| e.strip}.join(" | ").gsub(/\n/,"")
-		movie_obj.image = doc_bio.css("#title-overview-widget .slate_wrapper .poster a img")[0]['src']
-		movie_obj.trailer = "https://www.imdb.com#{doc_bio.css("#title-overview-widget .slate a")[0]["href"]}"
-		movie_obj.play_movie = "► https://gostream.site/#{movie_obj.title.gsub(" ","-").downcase}"
+		movie_obj.trailer = "https://www.imdb.com#{trailer.css("#title-overview-widget .slate a")[0]["href"]}" if trailer
+		movie_obj.play_movie = "https://gostream.site/#{movie_obj.title.gsub(" ","-").downcase}"
 		movie_obj
 	end
 

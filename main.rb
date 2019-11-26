@@ -7,7 +7,6 @@ end
 #examples:
 cli = CLI.new
 cli.run
-cli.menu
 
 
 # binding.pry

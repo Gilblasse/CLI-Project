@@ -13,3 +13,9 @@ gem "open_uri_redirections", "~> 0.2.1"
 gem 'rspec', '~> 3.9'
 
 gem 'rainbow', '~> 3.0'
+
+gem 'text', '~> 1.3', '>= 1.3.1'
+
+gem 'launchy', '~> 2.4', '>= 2.4.3'
+
+gem 'artii', '~> 2.1', '>= 2.1.2'

@@ -1,5 +1,5 @@
 class Movie
-	attr_accessor :title, :year, :url, :rating,:summary,:director,:stars,:film_rating,:subtext,:image,:trailer,:play_movie
+	attr_accessor :title, :year, :url, :rating,:summary,:director,:stars,:film_rating,:subtext,:trailer,:play_movie
 	@@all = []
 
 	def initialize(movie_hash)
@@ -14,7 +14,8 @@ class Movie
 	end
 
 	def self.find_by_title(title)
-		self.all.find {|movie| movie.title == title }
+		white = Text::WhiteSimilarity.new
+		self.all.select {|movie| white.similarity(movie.title, title) >= 0.4}
 	end
 
 	def self.find_by_year(input)
