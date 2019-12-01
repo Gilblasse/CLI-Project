@@ -49,9 +49,14 @@ class Scraper
 	end
 
 	def self.start_scraping_stars(url)
+		star = Star.find_star_by_url(url)
+		if star.nil?
 			html = open("https://www.imdb.com#{url}")
 			doc = Nokogiri::HTML(html)
-			self.initialize_star(doc,url)
+			star = self.initialize_star(doc,url)
+		else 
+			star
+		end
 	end
 
 	def self.bio_scraper(url)
@@ -62,7 +67,7 @@ class Scraper
 	def self.generate_stars_hash(doc,url)
 		bio = self.bio_scraper(url)
 		{
-			name: doc.css(".itemprop")[0].text,
+			fullname: doc.css(".itemprop")[0].text,
 			subtext: doc.css(".itemprop")[1..-1].text.gsub(/(?!^\n)\n/," | ").gsub(/\n/,""),
 			born: bio.css("#overviewTable tr:nth-child(1) td:nth-child(2) a").map{|e| e.text},
 			bio: bio.css(".soda p").text.split(/\n/)[1].strip,

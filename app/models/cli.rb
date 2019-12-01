@@ -1,15 +1,17 @@
 class CLI
 	BASE_PATH = "https://www.imdb.com/chart/top"
+	prompt = -> (page_num) { output.puts "Page -#{page_num}- Press enter to continue" }
+	PAGER = TTY::Pager.new(prompt: prompt)
 	FONT_A = Artii::Base.new :font => 'cricket'
 	FONT_B = Artii::Base.new :font => 'cursive'
 	OPTIONS_A = %w(Movies_List Search Quit)
-	OPTIONS_B = %w(Menu Trailer Movie Actors Director Quit)
+	OPTIONS_B = %w(Play_Game Play_Trailer Play_Movie Actors Director)
 	MENU_A = "                       			    	    -------------------------------------------
 								#{OPTIONS_A.map.with_index{|option,i| "#{"#{i+1}".cyan}. #{option.cyan}" }.join(" | ")}
 							     -------------------------------------------"
-	MENU_B = "\n						   Please Choose an Option Below
+	MENU_B = "\n				      Please Choose an Option Below ('m' for menu) ('q' to quit)
 				--------------------------------------------------------------------
-				#{OPTIONS_B.map.with_index{|option,i| "#{"#{i+1}".cyan}. #{option.cyan}" }.join(" | ")}
+				#{OPTIONS_B.map.with_index(1){|option,i| "#{"#{i}".cyan}. #{option.cyan}" }.join(" | ")}
 				--------------------------------------------------------------------
 			"
 	NOT_FOUND = "
@@ -18,10 +20,20 @@ class CLI
 	==================================================
 	"
 
-
 	def run
+		# binding.pry
 		Scraper.new(BASE_PATH)
 		menu
+	end
+
+	def winsize
+		# Ruby 1.9.3 added 'io/console' to the standard library.
+		require 'io/console'
+		IO.console.winsize
+	  rescue LoadError
+		# This works with older Ruby, but only with systems
+		# that have a tput(1) command, such as Unix clones.
+		[Integer(`tput li`), Integer(`tput co`)]
 	end
 
 	def menu
@@ -36,7 +48,7 @@ class CLI
 				display_all_movies
 			when "2"
 				search
-			when "3","q"
+			when "3"
 				puts "Quit"
 			else
 				menu
@@ -69,8 +81,10 @@ class CLI
 	def selected_movie_menu_switch(movie)
 		input = gets.chomp
 		case input
-			when "1"
+			when "m"
 				menu
+			when "1"
+				play_game(movie)
 			when "2"
 				play_trailer(movie)
 			when "3"
@@ -79,7 +93,7 @@ class CLI
 				display_stars(movie)
 			when "5"
 				display_director(movie)
-			when "6", "q"
+			when "q"
 				puts "Quit"
 			else
 				selected_movie_menu(movie)
@@ -105,9 +119,16 @@ class CLI
 	end
 
 	def display_all_movies
-		Movie.all.each_with_index do |movie,i| 
-			puts "#{i+1}. #{movie.title} ------ (#{movie.year})"
+		rows = []
+		Movie.all.each.with_index do |movie,i| 
+			rows << ["#{i+1}.", "#{movie.title}"]
+			rows << :separator
 		end
+		table = Terminal::Table.new :title => "IMBD TOP 250",:headings => ['NUM', 'MOVIES'], :rows => rows
+		table.style = { :padding_left => 3, :border_x => "-", :border_i => "x"}
+		table.align_column(1, :center)
+
+		PAGER.page(table)
 		display_selected_movie(Scraper.movie_details(selected_movie))
 	end
 
@@ -133,6 +154,10 @@ class CLI
 		selected_movie_menu(movie)
 	end
 	def display_stars(movie)
+		# binding.pry
+		# rows, cols = winsize
+		# printf("%#{(cols + name.size)/2}s\n", name)
+		# system "clear" || system "cls"
 		"\n#{movie.stars.each_with_index{|e,i| puts "#{i+1}. #{e.first}"}}"
 		selected_star(movie)
 		selected_movie_menu(movie)
@@ -145,11 +170,43 @@ class CLI
 	end
 
 	def display_star(star)
-		puts "\n#{star.name.upcase}\n#{star.subtext}"
+		bio = star.bio.gsub(/\.(?=(?:[^.]*\.[^.]*\.[^.]*\.[^.]*\.[^.]*\.)*[^.]*$)/,".\n\n     ")
+		puts "\n#{star.fullname.upcase}\n#{star.subtext}"
 		puts "#{"Born:".magenta} #{star.born.first(2).join(", ")} In #{star.born.last}"
 		puts "\n#{"Biography:".magenta}"
-		puts star.bio.gsub(/\.(?=(?:[^.]*\.[^.]*\.[^.]*\.[^.]*\.[^.]*\.)*[^.]*$)/,".\n\n     ")
+		puts bio
 		puts "\n#{"Known For:".magenta} #{star.known_for.join(", ")}"
+	end
+
+	def play_game(movie)
+		game = Game.new(movie)
+		until game.over?
+			puts File.open("question_mark.txt").read
+			puts "#{"\n\nQuestion #{game.question_count + 1}:".magenta} 							Score: #{game.score}/5\n"
+			puts game.display_question
+			puts "\n\n	  							WHO AM I 	".blue
+			puts "				--------------------------------------------------------------------------"
+			puts "				#{game.choices}"
+			input = gets.chomp
+			break if input == "q"
+			puts game.check_answer(input.to_i - 1)
+		end
+		puts game.won? ? "\n\nCongratulations YOU WIN !!!" : "\n\nGettem next time Tiger".upcase
+		puts "Your total score is: #{game.score}/5"
+		game_menu(movie)
+	end
+
+	def game_menu(movie)
+		puts "1. Play Again  |  2. Back To Movie"
+		input = gets.chomp.to_i
+		case input
+			when 1
+				play_game(movie)
+			when 2
+				display_selected_movie(movie)
+			else
+				game_menu(movie)
+		end
 	end
 
 end
