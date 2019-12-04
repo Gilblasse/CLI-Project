@@ -9,11 +9,13 @@ class CLI
 		@menu_b_array =  %w(Play_Game Play_Trailer Play_Movie Actors Director)
 		@game_menu_array =  %w(Play_Again Back_To_Movie Quit)
 		@imbd_site = "https://www.imdb.com"
+		@sort = ""
 		activate_menu_options
 	end
 
 	def run
 		Scraper.new(imbd_site)
+		# binding.pry
 		menu_a
 	end
 
@@ -21,8 +23,8 @@ class CLI
 	def menu_a
 		puts "#{File.open("imdb.txt").read}\n\n\n".center(winsize.last)
 		@options,@menu_arr,@line_size = menu_a_options,menu_a_array,38
-		@heading = "Select A Menu Option From 1-3"
-		@error_message = "Please select from The Avialable options 1-3"
+		@heading = "Select A Menu Option From 1-6 or 'q' to Quit" 
+		@error_message = "Please select from The Avialable options 1-6 or 'q' to Quit"
 		create_print_menu
 		menu_switch
 	end
@@ -53,10 +55,30 @@ class CLI
 			menu_switch
 		end
 	end
+	
+	def sorting_menu
+		print_center(["SORT BY: (1) A-Z | (2) Most_Recent | (3) Highest_Ratings | (4) Go_Back"])
+		input = gets.chomp.to_i
+		case input 
+		when 1
+			@sort = "sort_by_alphabetical_order"
+		when 2
+			@sort = "sort_by_year"
+		when 3
+			@sort = "sort_by_highest_ratings"
+		when 4
+			menu_a
+		else
+			puts "Please Choose From The Options Outlined"
+			sorting_options
+		end
+	end
+
 
 	# THESE METHODS DISPLAY And SEARCH All MOVIES
 	def display_all_movies
-		@list_of_movies = Movie.all
+		sorting_menu 
+		@list_of_movies = Movie.send(@sort)
 		@list_header = "IMBD TOP 250"
 		list_movies
 	end
@@ -147,10 +169,17 @@ class CLI
 	
 	# CREATES LOGIC FOR MENU SWITCHES
 	def activate_menu_options
-		@menu_a_options = { '1' => method(:display_all_movies), '2' => method(:search), '3' => -> { puts 'quit' } }
+		@menu_a_options = { '1' => method(:display_all_movies), 
+							'2' => method(:search), 
+							'3' => -> { puts 'quit' }
+						  }
 		@menu_b_options = {	
-							'm' => method(:menu_a), '1' => method(:play_game), '2' => method(:play_trailer),
-							'3' => method(:play_movie),'4' => method(:list_stars),'5' => method(:display_director),
+							'm' => method(:menu_a), 
+							'1' => method(:play_game), 
+							'2' => method(:play_trailer),
+							'3' => method(:play_movie),
+							'4' => method(:list_stars),
+							'5' => method(:display_director),
 							'q' => -> { puts 'quit' }
 						  }
 		@game_options = {'1' => method(:play_game),'2' => method(:display_selected_movie),'3' => -> { puts 'quit' }}
@@ -158,9 +187,9 @@ class CLI
 
 	# CREATES A TABLE FULL OF MOVIE TITLES 
 	def create_movie_table
-		@line_size = ((winsize.last - 130) / 2)
-		table = Terminal::Table.new :title => @list_header,:headings => ["Num","Movies"], :rows => create_rows
-		table.style = { :padding_left => 3, :border_x => "-", :border_i => "x", :margin_left => line(" "),:width => 100}
+		@line_size = ((winsize.last - 165) / 2)
+		table = Terminal::Table.new :title => @list_header,:headings => ["NUM".center(31),"MOVIES".center(80),"YEAR","RATING"], :rows => create_rows
+		table.style = { :padding_left => 3, :border_x => "-", :border_i => "x", :margin_left => line(" "),:width => 150}
 		table.align_column(1, :center)
 		table.align_column(0, :center)
 		table
@@ -170,7 +199,7 @@ class CLI
 	def create_rows
 		rows = []
 		@list_of_movies.each.with_index(1) do |movie,i| 
-			rows << ["#{i}.", "#{movie.title}"]
+			rows << ["#{i}.", "#{movie.title}","#{movie.year}","#{movie.rating}"]
 			rows << :separator
 		end
 		rows
