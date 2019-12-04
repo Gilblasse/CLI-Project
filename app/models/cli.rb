@@ -1,12 +1,12 @@
 class CLI
-	attr_accessor :winsize, :menu_a_array , :menu_b_array, :imbd_site,:menu_a_options,:menu_b_options,:movie_picked,:game_options,:game_menu_array,
-				  :error_message,:options,:menu_arr,:line_size,:heading,:error_message
+	attr_accessor :winsize, :main_menu_array , :selected_movie_array, :imbd_site,:main_menu_options,:selected_movie_options,
+				  :movie_picked,:game_options,:game_menu_array,:error_message,:options,:menu_arr,:line_size,:heading,:error_message
 	PAGER = TTY::Pager.new
 
 	def initialize
 		@winsize = IO.console.winsize
-		@menu_a_array = %w(Movies_List Search Quit)
-		@menu_b_array =  %w(Play_Game Play_Trailer Play_Movie Actors Director)
+		@main_menu_array = %w(Movies_List Search Quit)
+		@selected_movie_array =  %w(Play_Game Play_Trailer Play_Movie Actors Director)
 		@game_menu_array =  %w(Play_Again Back_To_Movie Quit)
 		@imbd_site = "https://www.imdb.com"
 		@sort = ""
@@ -16,23 +16,23 @@ class CLI
 	def run
 		Scraper.new(imbd_site)
 		# binding.pry
-		menu_a
+		main_menu
 	end
 
 	# MENUS 
-	def menu_a
+	def main_menu
 		puts "#{File.open("imdb.txt").read}\n\n\n".center(winsize.last)
-		@options,@menu_arr,@line_size = menu_a_options,menu_a_array,38
-		@heading = "Select A Menu Option From 1-6 or 'q' to Quit" 
-		@error_message = "Please select from The Avialable options 1-6 or 'q' to Quit"
+		@options,@menu_arr,@line_size = main_menu_options,main_menu_array,38
+		@heading = "Select A Menu Option From 1-3 " 
+		@error_message = "Please select from The Avialable options between 1 - 3"
 		create_print_menu
 		menu_switch
 	end
 
-	def menu_b
-		@options,@menu_arr,@line_size = menu_b_options,menu_b_array,75
+	def selected_movie_menu
+		@options,@menu_arr,@line_size = selected_movie_options,selected_movie_array,75
 		@heading = "Select options (1 - 5) or ('m') for Main Menu or ('q') to Quit"
-		@error_message = "Please choose any options between 1-3 "
+		@error_message = "Please choose any options between 1-5 "
 		create_print_menu
 		menu_switch
 	end
@@ -67,7 +67,7 @@ class CLI
 		when 3
 			@sort = "sort_by_highest_ratings"
 		when 4
-			menu_a
+			main_menu
 		else
 			puts "Please Choose From The Options Outlined"
 			sorting_options
@@ -105,13 +105,13 @@ class CLI
 	#Finds selected movie in movie array
 	def selected_movie
 		input = make_index
-		input.between?(0,@list_of_movies.size) ? @list_of_movies[input] : menu_a
+		input.between?(0,@list_of_movies.size) ? @list_of_movies[input] : main_menu
 	end
 
 	#Shows info about selected movie
 	def display_selected_movie
 		puts movie_picked.display_movie_info
-		menu_b
+		selected_movie_menu
 	end
 	
 	def play_trailer
@@ -169,12 +169,12 @@ class CLI
 	
 	# CREATES LOGIC FOR MENU SWITCHES
 	def activate_menu_options
-		@menu_a_options = { '1' => method(:display_all_movies), 
+		@main_menu_options = { '1' => method(:display_all_movies), 
 							'2' => method(:search), 
 							'3' => -> { puts 'quit' }
 						  }
-		@menu_b_options = {	
-							'm' => method(:menu_a), 
+		@selected_movie_options = {	
+							'm' => method(:main_menu), 
 							'1' => method(:play_game), 
 							'2' => method(:play_trailer),
 							'3' => method(:play_movie),
@@ -221,7 +221,7 @@ class CLI
 	def make_index
 		input = gets.chomp.to_i
 		new_input = input.abs - 1
-		input.nonzero? ? new_input : menu_a
+		input.nonzero? ? new_input : main_menu
 	end
 
 	# CREATE A LINE SEPERATOR
