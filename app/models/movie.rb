@@ -1,5 +1,7 @@
 class Movie
 	attr_accessor :title, :year, :url, :rating,:summary,:director,:stars,:film_rating,:subtext,:trailer,:play_movie
+	FONT_Style_A = Artii::Base.new :font => 'cricket'
+	FONT_STYLE = Artii::Base.new :font => 'cursive'
 	@@all = []
 
 	def initialize(movie_hash)
@@ -9,24 +11,56 @@ class Movie
 		@@all << self
 	end
 
-	def play_movie
+	def get_selected_movie
 		gostream_site = "gostream.site"
 		browser = Watir::Browser.new(:chrome, {:chromeOptions => {:args => ['--headless', '--window-size=1200x600']}})
 		browser.goto gostream_site
 		browser.text_field(placeholder: "Search..").set self.title
-		# sleep(2)
 		browser.button(type: "submit").click
 		movies = Scraper.gostream_scraper(browser.html)
 		movies[self.title]
+	end
+
+	def play_movie_w_message
+		movie_url = self.get_selected_movie
+		Launchy.open(movie_url) if movie_url
+		movie_url ? FONT_Style_A.asciify("Playing Movie") : FONT_Style_A.asciify("Sorry Movie Not Available!!")
+	end
+
+
+	def play_trailer_w_message
+		Launchy.open(self.trailer) if self.trailer
+		self.trailer ? FONT_Style_A.asciify("Playing Trailer") : FONT_Style_A.asciify("Sorry Trailer Not Available")
+	end
+
+	def display_movie_info
+		[
+			"#{FONT_STYLE.asciify(self.title)}\n",
+			"\n#{self.title.upcase}\n#{self.subtext}",
+			"\n#{"Summary:".magenta} #{self.summary}\n",
+			"#{"Top 3 Actors:".magenta} #{self.stars.map{|e|e[0]}.join(", ")}",
+			"#{"Directors:".magenta} #{self.director.first}"
+		]
 	end
 
 	def self.all
 		@@all
 	end
 
-	def self.find_by_title(title)
+	def self.matching_titles
+		title = gets.chomp
+		cli = CLI.new
+		cli.menu_a if title.eql? 'q'
 		white = Text::WhiteSimilarity.new
-		self.all.select {|movie| white.similarity(movie.title, title) >= 0.4}
+		matching_movies = self.all.select {|movie| white.similarity(movie.title, title) >= 0.3}
+		matching_movies.empty? ? -> { cli.print_center(self.not_found) } : matching_movies
+	end
+
+	def self.not_found
+		[
+			"!! Sorry... Movie Not Found in IMDB Top 250 List !!\n",
+			"Please Try Again.  ☹"
+		]
 	end
 
 	def self.find_by_year(input)
