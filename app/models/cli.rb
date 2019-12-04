@@ -1,212 +1,223 @@
 class CLI
-	BASE_PATH = "https://www.imdb.com/chart/top"
-	prompt = -> (page_num) { output.puts "Page -#{page_num}- Press enter to continue" }
-	PAGER = TTY::Pager.new(prompt: prompt)
+	PAGER = TTY::Pager.new
 	FONT_A = Artii::Base.new :font => 'cricket'
 	FONT_B = Artii::Base.new :font => 'cursive'
-	OPTIONS_A = %w(Movies_List Search Quit)
-	OPTIONS_B = %w(Play_Game Play_Trailer Play_Movie Actors Director)
-	MENU_A = "                       			    	    -------------------------------------------
-								#{OPTIONS_A.map.with_index{|option,i| "#{"#{i+1}".cyan}. #{option.cyan}" }.join(" | ")}
-							     -------------------------------------------"
-	MENU_B = "\n				      Please Choose an Option Below ('m' for menu) ('q' to quit)
-				--------------------------------------------------------------------
-				#{OPTIONS_B.map.with_index(1){|option,i| "#{"#{i}".cyan}. #{option.cyan}" }.join(" | ")}
-				--------------------------------------------------------------------
-			"
 	NOT_FOUND = "
 	!! Sorry... Movie Not Found in IMDB Top 250 List !!
 			Please Try Again.  ☹
 	==================================================
 	"
+	attr_accessor :winsize, :menu_a_array , :menu_b_array, :imbd_site,:menu_a_options,:menu_b_options,:movie_picked,:game_options,:game_menu_array,
+				  :error_message,:options,:menu_arr,:line_size,:heading,:error_message
+
+	def initialize
+		@winsize = IO.console.winsize
+		@menu_a_array = %w(Movies_List Search Quit)
+		@menu_b_array =  %w(Play_Game Play_Trailer Play_Movie Actors Director)
+		@game_menu_array =  %w(Play_Again Back_To_Movie Quit)
+		@imbd_site = "https://www.imdb.com"
+	end
 
 	def run
-		# binding.pry
-		Scraper.new(BASE_PATH)
-		menu
+		Scraper.new(imbd_site)
+		activate_menu_options
+		menu_a
 	end
 
-	def winsize
-		# Ruby 1.9.3 added 'io/console' to the standard library.
-		require 'io/console'
-		IO.console.winsize
-	  rescue LoadError
-		# This works with older Ruby, but only with systems
-		# that have a tput(1) command, such as Unix clones.
-		[Integer(`tput li`), Integer(`tput co`)]
+	# MENUS 
+	def menu_a
+		puts "#{File.open("imdb.txt").read}\n\n\n".center(winsize.last)
+		@options,@menu_arr,@line_size = menu_a_options,menu_a_array,38
+		@heading = "Select A Menu Option From 1-3"
+		@error_message = "Please select from The Avialable options 1-3"
+		create_print_menu
+		switch
 	end
 
-	def menu
-		puts "#{File.open("imdb.txt").read}\n #{MENU_A}"
-		menu_switch
+	def menu_b
+		@options,@menu_arr,@line_size = menu_b_options,menu_b_array,75
+		@heading = "What Would You Like To Do:  select (1 - 3)"
+		@error_message = "Please choose any options between 1-3 "
+		create_print_menu
+		switch
 	end
 
-	def menu_switch
+	def game_menu
+		@options,@menu_arr,@line_size = game_options,game_menu_array,58
+		@heading = "Choose an Option Below: select (1-3)"
+		@error_message = "Please choose any of theses options 1-3 "
+		create_print_menu
+		switch
+	end
+
+	def switch
 		input = gets.chomp
-		case input
-			when "1"
-				display_all_movies
-			when "2"
-				search
-			when "3"
-				puts "Quit"
-			else
-				menu
+		if options[input]
+			options[input].()
+		else
+			@heading = error_message
+			create_print_menu
+			switch
 		end
+	end
+
+	# THESE METHODS DISPLAY And SEARCH All MOVIES
+	def display_all_movies
+		movies = Movie.all
+		table = create_movie_table(movies,"IMBD TOP 250")
+		PAGER.page(table)
+		@movie_picked = Scraper.movie_details(selected_movie(movies))
+		display_selected_movie
 	end
 
 	def search
 		print "Search By Movie Title: "
 		input = gets.chomp
 		movies = Movie.find_by_title(input)
-		display_movie_options(movies)
+		table = create_movie_table(movies,"From: IMBD TOP 250 MOVIES")
+		puts table
+		@movie_picked = Scraper.movie_details(selected_movie(movies))
+		display_selected_movie
 	end
 
-	def display_movie_options(movies)
-		if !movies.empty?
-			movies.each_with_index {|movie,i| puts "#{i+1}. #{movie.title}"}
-			movie = Scraper.movie_details(selected_movie(movies))
-			display_selected_movie(movie)
-		else
-			puts NOT_FOUND
-			input == "q" || input == "3"? menu : search
-		end
+
+	# WHEN A MOVIE IS CHOOSEN THE METHODS BELOW WILL CONTROL THE USERS EXPERIENCES  
+
+	#Finds selected movie in movie array
+	def selected_movie(movie_arr)
+		input = make_index
+		input.between?(0,movie_arr.size) ? movie_arr[input] : menu_a
 	end
 
-	def selected_movie_menu(movie)
-		puts MENU_B
-		selected_movie_menu_switch(movie)
-	end
-
-	def selected_movie_menu_switch(movie)
-		input = gets.chomp
-		case input
-			when "m"
-				menu
-			when "1"
-				play_game(movie)
-			when "2"
-				play_trailer(movie)
-			when "3"
-				play_movie(movie)
-			when "4"
-				display_stars(movie)
-			when "5"
-				display_director(movie)
-			when "q"
-				puts "Quit"
-			else
-				selected_movie_menu(movie)
-		end
+	#Shows info about selected movie
+	def display_selected_movie
+		puts "#{FONT_B.asciify(movie_picked.title)}\n\n#{movie_picked.title.upcase}\n#{movie_picked.subtext}"
+		puts "\n#{"Summary:".magenta} #{movie_picked.summary}\n#{"Top 3 Actors:".magenta} #{movie_picked.stars.map{|e|e[0]}.join(", ")}"
+		puts "#{"Directors:".magenta} #{movie_picked.director.first}"
+		menu_b
 	end
 	
-	def play_trailer(movie)
-		Launchy.open(movie.trailer) if movie.trailer
-		puts movie.trailer ? FONT_A.asciify("Playing Trailer") : FONT_A.asciify("Sorry Trailer Not Available")
-		selected_movie_menu(movie)
+	def play_trailer
+		Launchy.open(movie_picked.trailer) if movie_picked.trailer
+		puts movie_picked.trailer ? FONT_A.asciify("Playing Trailer") : FONT_A.asciify("Sorry Trailer Not Available")
+		continue(game_options,'2')
 	end
 
-	def play_movie(movie)
-		Launchy.open(movie.play_movie)
-		puts FONT_A.asciify("Play Movie")
-		selected_movie_menu(movie)
+	def play_movie
+		movie_url = movie_picked.play_movie
+		Launchy.open(movie_url) if movie_url
+		puts movie_url ? FONT_A.asciify("Playing Movie") : FONT_A.asciify("Sorry Movie Not Available!!")
+		continue(game_options,'2')
 	end
 
 	def make_index
 		input = gets.chomp.to_i
 		new_input = input.abs - 1
-		input.nonzero? ? new_input : menu
+		input.nonzero? ? new_input : menu_a
 	end
 
-	def display_all_movies
-		rows = []
-		Movie.all.each.with_index do |movie,i| 
-			rows << ["#{i+1}.", "#{movie.title}"]
-			rows << :separator
-		end
-		table = Terminal::Table.new :title => "IMBD TOP 250",:headings => ['NUM', 'MOVIES'], :rows => rows
-		table.style = { :padding_left => 3, :border_x => "-", :border_i => "x"}
-		table.align_column(1, :center)
-
-		PAGER.page(table)
-		display_selected_movie(Scraper.movie_details(selected_movie))
-	end
-
-	def display_selected_movie(movie)
-		puts "#{FONT_B.asciify(movie.title)}\n\n#{movie.title.upcase}\n#{movie.subtext}"
-		puts "\n#{"Summary:".magenta} #{movie.summary}\n#{"Top 3 Actors:".magenta} #{movie.stars.map{|e|e[0]}.join(", ")}"
-		puts "#{"Directors:".magenta} #{movie.director.first}"
-		selected_movie_menu(movie)
-	end
-
-	def selected_movie(movie=nil)
-		input = make_index
-		if movie.nil? 
-			input.between?(0,Movie.all.size) ? Movie.all[input] : menu
-		else
-			input.between?(0,movie.size) ? movie[input] : menu
-		end
-	end
-
-	def display_director(movie)
-		director = Scraper.start_scraping_stars(movie.director.last)
-		display_star(director)
-		selected_movie_menu(movie)
-	end
-	def display_stars(movie)
-		# binding.pry
-		# rows, cols = winsize
-		# printf("%#{(cols + name.size)/2}s\n", name)
-		# system "clear" || system "cls"
-		"\n#{movie.stars.each_with_index{|e,i| puts "#{i+1}. #{e.first}"}}"
-		selected_star(movie)
-		selected_movie_menu(movie)
+	#list all stars of selected movie
+	def list_stars
+		actors = movie_picked.stars.reject {|star| star.first.eql? movie_picked.director}
+		@line_size = ((winsize.last - 80) / 2)
+		rows = actors.map.with_index(1) {|actor,i| [i.to_s,actor.first]}
+		table = Terminal::Table.new :title => "More Info About Your Actor: select Available options (1-3) ".cyan,:headings => ["Num".cyan,"Top Actors".cyan], :rows => rows
+		table.style = { :padding_left => 3, :border_x => "=", :border_i => "*", :margin_left => line(" ")}
+		puts table
+		
+		selected_star
 	end
 	
-	def selected_star(movie)
+	# Shows choosen star information
+	def selected_star
 		input = make_index
-		star = Scraper.start_scraping_stars(movie.stars[input][1])
-		display_star(star)
+		star_url = movie_picked.stars[make_index][1] if input.between?(0,movie_picked.stars.size - 1)
+		list_stars if !input.between?(0,movie_picked.stars.size - 1)
+		star = Scraper.start_scraping_stars(star_url)
+		puts star.display_info
+		continue(game_options,'2')
 	end
 
-	def display_star(star)
-		bio = star.bio.gsub(/\.(?=(?:[^.]*\.[^.]*\.[^.]*\.[^.]*\.[^.]*\.)*[^.]*$)/,".\n\n     ")
-		puts "\n#{star.fullname.upcase}\n#{star.subtext}"
-		puts "#{"Born:".magenta} #{star.born.first(2).join(", ")} In #{star.born.last}"
-		puts "\n#{"Biography:".magenta}"
-		puts bio
-		puts "\n#{"Known For:".magenta} #{star.known_for.join(", ")}"
+	# Shows directors information
+	def display_director
+		director = Scraper.start_scraping_stars(movie_picked.director.last)
+		puts director.display_info
+		continue(game_options,'2')
 	end
 
-	def play_game(movie)
-		game = Game.new(movie)
+	def play_game
+		game = Game.new(movie_picked)
 		until game.over?
 			puts File.open("question_mark.txt").read
-			puts "#{"\n\nQuestion #{game.question_count + 1}:".magenta} 							Score: #{game.score}/5\n"
+			print "#{"\n\nQuestion #{game.question_count + 1}:".magenta}"
+			puts  "Score: #{game.score}/5".center(winsize.last / 1.3).cyan
 			puts game.display_question
-			puts "\n\n	  							WHO AM I 	".blue
-			puts "				--------------------------------------------------------------------------"
-			puts "				#{game.choices}"
+			puts "\n\n#{"WHO AM I".center(winsize.last / 1.15).cyan}"
+			puts "Choose A Answer Below or select #{"'q'".red} to #{"quit".red}".center(winsize.last / 1.01)
+			line = line("-")
+			print_center([line,game.choices,line])
 			input = gets.chomp
 			break if input == "q"
 			puts game.check_answer(input.to_i - 1)
 		end
-		puts game.won? ? "\n\nCongratulations YOU WIN !!!" : "\n\nGettem next time Tiger".upcase
-		puts "Your total score is: #{game.score}/5"
-		game_menu(movie)
+		puts game.won? ? "Congratulations YOU WIN !!!".center(winsize.last / 1.4).green : "Gettem next time Tiger".center(winsize.last / 1.2)
+		puts "#{"Your total score is: #{game.score}/5".center(winsize.last / 1.2).green}\n\n"
+		game_menu
 	end
 
-	def game_menu(movie)
-		puts "1. Play Again  |  2. Back To Movie"
-		input = gets.chomp.to_i
-		case input
-			when 1
-				play_game(movie)
-			when 2
-				display_selected_movie(movie)
-			else
-				game_menu(movie)
+	def continue(destination,key)
+		puts "Press Enter to Continue"
+		input = gets.chomp
+		input.eql?("") ? destination[key].() : continue(destination,key)	
+	end
+	
+	# CREATES LOGIC FOR MENU SWITCHES
+	def activate_menu_options
+		@menu_a_options = { '1' => method(:display_all_movies), '2' => method(:search), '3' => -> { puts 'quit' } }
+		@menu_b_options = {	
+							'm' => method(:menu_a), '1' => method(:play_game), '2' => method(:play_trailer),
+							'3' => method(:play_movie),'4' => method(:list_stars),'5' => method(:display_director),
+							'q' => -> { puts 'quit' }
+						  }
+		@game_options = {'1' => method(:play_game),'2' => method(:display_selected_movie),'3' => -> { puts 'quit' }}
+	end
+
+	# CREATES A TABLE FULL OF MOVIE TITLES 
+	def create_movie_table(movies,title='')
+		rows = create_rows(movies)
+		table = Terminal::Table.new :title => title,:headings => ["Num","Movies"], :rows => rows
+		table.style = { :padding_left => 3, :border_x => "-", :border_i => "x"}
+		table.align_column(1, :center)
+		table
+	end
+	
+	# BUILDS ROWS FOR TABLE METHOD
+	def create_rows(movies)
+		rows = []
+		movies.each.with_index(1) do |movie,i| 
+			rows << ["#{i}.", "#{movie.title}"]
+			rows << :separator
 		end
+		rows
+	end
+
+	# DESIGNS A MENU WITH CUSTOM MENU INFORMATION
+	def create_print_menu
+		line = line("-")
+		menu = menu_arr.map.with_index(1){|option,i| "#{i}. #{option}" }.join(" | ")
+		print_center([heading,line,menu,line])
+	end
+
+	# PRINT ANYTHING TO THE CENTER OF THE TERMINAL
+	def print_center(array)
+		array.each{|e| printf("%#{((winsize.last + e.size)-28)/2}s\n", e) }
+	end
+
+	# CREATE A LINE SEPERATOR
+	def line(separator)
+		a = [] 
+		@line_size.times{a << separator}
+		a.join('')
 	end
 
 end

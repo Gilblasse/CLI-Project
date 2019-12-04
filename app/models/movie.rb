@@ -9,6 +9,17 @@ class Movie
 		@@all << self
 	end
 
+	def play_movie
+		gostream_site = "gostream.site"
+		browser = Watir::Browser.new(:chrome, {:chromeOptions => {:args => ['--headless', '--window-size=1200x600']}})
+		browser.goto gostream_site
+		browser.text_field(placeholder: "Search..").set self.title
+		# sleep(2)
+		browser.button(type: "submit").click
+		movies = Scraper.gostream_scraper(browser.html)
+		movies[self.title]
+	end
+
 	def self.all
 		@@all
 	end

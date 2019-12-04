@@ -28,7 +28,7 @@ class Game
         @turn_count += 1
         if bios[index] == @random_bio
             add_score
-            "Correct\n".green.upcase
+            "CORRECT".green
         else 
             "#{"Sorry, The Correct Answer Is:".red} #{answer.fullname}\n"
         end

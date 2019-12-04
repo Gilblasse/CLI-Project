@@ -13,6 +13,16 @@ class Star
         @bio.gsub(/\.(?=(?:[^.]*\.[^.]*\.[^.]*\.[^.]*\.[^.]*\.)*[^.]*$)/,".\n\n     ")
     end
 
+    def display_info
+        [
+            "\n#{self.fullname.upcase}\n#{self.subtext}\n",
+            "#{"Born:".magenta} #{self.born.first(2).join(", ")} In #{self.born.last}\n",
+            "\n#{"Biography:".magenta}\n",
+            "#{self.bio}\n",
+            "#{"Known For:".magenta} #{self.known_for.join(", ")}"
+        ]
+    end
+
     def first_name
         fullname.split(" ").first
     end

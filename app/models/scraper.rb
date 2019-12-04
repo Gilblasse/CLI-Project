@@ -1,27 +1,33 @@
 class Scraper
+	attr_accessor :imbd_url,:scraped_movies
 
 	def initialize(url)
-		html = open(url)
-		doc = Nokogiri::HTML(html)
-		movies_list = doc.css("#main div.lister tbody.lister-list tr")
-		initialize_movies(movies_list)
-	end  
+		@imbd_url = url
+		scrape_list_of_movies
+	end
 
-	def generate_movie_hash(movies)
-		movies.map do |movie| 
-		{
-			title: movie.css(".titleColumn").text.split("\n")[2].strip,
-			year: movie.css(".titleColumn").text.split("\n")[3].gsub(/[()\s]/,""),
-			url: movie.css(".titleColumn a")[0]['href'],
-			rating: movie.css(".ratingColumn").text.scan(/\d[.]\d/)[0]
-		}
+	def scrape_list_of_movies
+		html = open("#{imbd_url}/chart/top")
+		doc = Nokogiri::HTML(html)
+		@scraped_movies = doc.css("#main div.lister tbody.lister-list tr")
+		initialize_movies
+	end
+
+	def initialize_movies
+		movies_hash = generate_array_movies_hash
+		movies_hash.each do |movie_hash|
+			movie = Movie.new(movie_hash)
 		end
 	end
 
-	def initialize_movies(movies)
-		movies_obj = generate_movie_hash(movies)
-		movies_obj.each do |movie_obj|
-			movie = Movie.new(movie_obj)
+	def generate_array_movies_hash
+		scraped_movies.map do |movie| 
+			{
+				title: movie.css(".titleColumn").text.split("\n")[2].strip,
+				year: movie.css(".titleColumn").text.split("\n")[3].gsub(/[()\s]/,""),
+				url: movie.css(".titleColumn a")[0]['href'],
+				rating: movie.css(".ratingColumn").text.scan(/\d[.]\d/)[0]
+			}
 		end
 	end
 
@@ -44,7 +50,7 @@ class Scraper
 		)
 		movie_obj.subtext = subtext.css('.subtext').text.split(/[|]/).map{|e| e.strip}.join(" | ").gsub(/\n/,"")
 		movie_obj.trailer = "https://www.imdb.com#{trailer.css("#title-overview-widget .slate a")[0]["href"]}" if trailer
-		movie_obj.play_movie = "https://gostream.site/#{movie_obj.title.gsub(" ","-").downcase}"
+		# movie_obj.play_movie = "https://gostream.site/#{movie_obj.title.gsub(" ","-").downcase}"
 		movie_obj
 	end
 
@@ -79,5 +85,12 @@ class Scraper
 		stars_hash = self.generate_stars_hash(doc,url)
 		star = Star.new(stars_hash)
 		star
+	end
+
+
+	def self.gostream_scraper(html)
+		doc = Nokogiri::HTML.parse(html)
+		movies_list = doc.css(".movies-list-full .ml-item")
+		movies_list.map{|movie| [movie.css("a")[0]['oldtitle'],movie.css("a")[0]['href']] }.to_h
 	end
 end
