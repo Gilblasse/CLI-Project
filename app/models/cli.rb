@@ -14,8 +14,8 @@ class CLI
 	end
 
 	def run
-		Scraper.new(imbd_site)
-		# binding.pry
+		@scraper = Scraper.new
+		@scraper.first_page
 		main_menu
 	end
 
@@ -92,7 +92,7 @@ class CLI
 
 	def list_movies 
 		puts create_movie_table
-		@movie_picked = Scraper.movie_details(selected_movie)
+		@movie_picked = @scraper.second_page(selected_movie)
 		display_selected_movie
 	end
 
@@ -142,14 +142,14 @@ class CLI
 		input = make_index
 		star_url = movie_picked.stars[make_index][1] if input.between?(0,movie_picked.stars.size - 1)
 		list_stars if !input.between?(0,movie_picked.stars.size - 1)
-		star = Scraper.start_scraping_stars(star_url)
+		star = @scraper.find_or_scrape_star(star_url)
 		puts star.display_info
 		continue(game_options,'2')
 	end
 
 	# Shows directors information
 	def display_director
-		director = Scraper.start_scraping_stars(movie_picked.director.last)
+		director = @scraper.find_or_scrape_star(movie_picked.director.last)
 		puts director.display_info
 		continue(game_options,'2')
 	end

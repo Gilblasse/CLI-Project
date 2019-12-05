@@ -8,6 +8,3 @@ end
 
 cli = CLI.new
 cli.run
-
-
-# binding.pry

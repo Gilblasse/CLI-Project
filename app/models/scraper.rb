@@ -1,93 +1,79 @@
 class Scraper
-	attr_accessor :imbd_url,:scraped_movies
+	attr_accessor :imdb_url,:scraped_movies,:page,:doc
 
-	def initialize(url)
-		@imbd_url = url
-		scrape_list_of_movies
+	def scrape
+		@imdb_url = "https://www.imdb.com"
+		html = open("#{imdb_url}#{@page}")
+		@doc = Nokogiri::HTML(html)
 	end
 
-	def scrape_list_of_movies
-		html = open("#{imbd_url}/chart/top")
-		doc = Nokogiri::HTML(html)
-		@scraped_movies = doc.css("#main div.lister tbody.lister-list tr")
-		initialize_movies
-	end
+	# MOVIE PAGES SECTION
+	def first_page
+		@page = "/chart/top"
+		scrape
 
-	def initialize_movies
-		movies_hash = generate_array_movies_hash
-		movies_hash.each do |movie_hash|
-			movie = Movie.new(movie_hash)
+		scraped_movies = @doc.css("tbody.lister-list tr")
+		scraped_movies.each do |movie|
+			hash = {
+						title: movie.css(".titleColumn").text.split("\n")[2].strip,
+						year: movie.css(".titleColumn").text.split("\n")[3].gsub(/[()\s]/,""),
+						url: movie.css(".titleColumn a")[0]['href'],
+						rating: movie.css(".ratingColumn").text.scan(/\d[.]\d/)[0]
+					}
+			Movie.new(hash)
 		end
 	end
 
-	def generate_array_movies_hash
-		scraped_movies.map do |movie| 
-			{
-				title: movie.css(".titleColumn").text.split("\n")[2].strip,
-				year: movie.css(".titleColumn").text.split("\n")[3].gsub(/[()\s]/,""),
-				url: movie.css(".titleColumn a")[0]['href'],
-				rating: movie.css(".ratingColumn").text.scan(/\d[.]\d/)[0]
-			}
-		end
+	def second_page(movie)
+		@page = movie.url
+		scrape
+
+		@director_section = @doc.css(".plot_summary h4 + a")[0]
+		@stars_section = @doc.css('.credit_summary_item')[2].css("a")[0..-2]
+		@trailer = @doc.css(".slate a")[0]["href"]
+
+		movie.summary = @doc.css('.summary_text').text.strip
+		movie.director = [@director_section.text, @director_section['href']]
+		movie.stars = @stars_section.map{ |e| [ e.text,e['href'] ] }
+		movie.subtext = @doc.css('.subtext').text.split(/[|]/).map{|e| e.strip}.join(" | ").gsub(/\n/,"")
+		movie.trailer = "#{@imdb_url}#{@trailer}" if @trailer
+
+		movie
 	end
 
-	def self.movie_details(movie_obj)
-		html_bio = open("https://www.imdb.com"+ movie_obj.url)
-		doc_bio = Nokogiri::HTML(html_bio)
-		movie_details = doc_bio.css("#title-overview-widget div.plot_summary")
-		movie_subtext = doc_bio.css("#title-overview-widget .titleBar")
-		trailer = doc_bio.css("#title-overview-widget .slate a")[0].nil? ? nil : doc_bio
-		self.update_movie_attr(movie_obj,movie_details,movie_subtext,trailer)
-	end
-	
-	def self.update_movie_attr(movie_obj,details,subtext,trailer)
-		movie_obj.summary = details.css('.summary_text').text.strip
-		movie_obj.director = [details.css('.credit_summary_item h4 + a')[0].text].push(
-			details.css('.credit_summary_item h4 + a')[0]['href']
-		)
-		movie_obj.stars = details.css('.credit_summary_item')[2].css("a")[0...-1].map{|e|e.text}.zip(
-			details.css('.credit_summary_item')[2].css("a")[0...-1].map{|e|e['href']}
-		)
-		movie_obj.subtext = subtext.css('.subtext').text.split(/[|]/).map{|e| e.strip}.join(" | ").gsub(/\n/,"")
-		movie_obj.trailer = "https://www.imdb.com#{trailer.css("#title-overview-widget .slate a")[0]["href"]}" if trailer
-		# movie_obj.play_movie = "https://gostream.site/#{movie_obj.title.gsub(" ","-").downcase}"
-		movie_obj
-	end
 
-	def self.start_scraping_stars(url)
-		star = Star.find_star_by_url(url)
+	# STAR SECTION
+	def find_or_scrape_star(url)
+		@page = url
+		star = Star.find_star_by_url(@page)
 		if star.nil?
-			html = open("https://www.imdb.com#{url}")
-			doc = Nokogiri::HTML(html)
-			star = self.initialize_star(doc,url)
-		else 
-			star
+			scrape
+
+			stars_hash = stars_page_hash
+			star = Star.new(stars_hash)
 		end
+			star
 	end
 
-	def self.bio_scraper(url)
-		html = open("https://www.imdb.com#{url}bio?ref_=nm_ov_bio_sm")
-		doc = Nokogiri::HTML(html)
-	end
-
-	def self.generate_stars_hash(doc,url)
-		bio = self.bio_scraper(url)
+	def stars_page_hash
 		{
-			fullname: doc.css(".itemprop")[0].text,
-			subtext: doc.css(".itemprop")[1..-1].text.gsub(/(?!^\n)\n/," | ").gsub(/\n/,""),
-			born: bio.css("#overviewTable tr:nth-child(1) td:nth-child(2) a").map{|e| e.text},
-			bio: bio.css(".soda p").text.split(/\n/)[1].strip,
-			known_for: doc.css("#knownfor .knownfor-title-role a").map{|e|e.text}
+			fullname: @doc.css(".itemprop")[0].text,
+			subtext: @doc.css(".itemprop")[1..-1].text.gsub(/(?!^\n)\n/," | ").gsub(/\n/,""),
+			known_for: @doc.css("#knownfor .knownfor-title-role a").map{|e|e.text}
+		}
+		.merge(star_bio_page_hash)
+	end
+
+	def star_bio_page_hash
+		@page = "#{@page}bio?ref_=nm_ov_bio_sm"
+		scrape
+		{
+			born: @doc.css("#overviewTable tr:nth-child(1) td:nth-child(2) a").map{|e| e.text},
+			bio: @doc.css(".soda p").text.split(/\n/)[1].strip,
 		}
 	end
 
-	def self.initialize_star(doc,url)
-		stars_hash = self.generate_stars_hash(doc,url)
-		star = Star.new(stars_hash)
-		star
-	end
-
-
+	# SCRAPING GOSTREAM WEBSITE FOR MOVIE CLASS METHOD PLAY MOVIE
 	def self.gostream_scraper(html)
 		doc = Nokogiri::HTML.parse(html)
 		movies_list = doc.css(".movies-list-full .ml-item")
