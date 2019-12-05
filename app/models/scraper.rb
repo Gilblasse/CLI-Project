@@ -73,6 +73,7 @@ class Scraper
 		}
 	end
 
+	
 	# SCRAPING GOSTREAM WEBSITE FOR MOVIE CLASS METHOD PLAY MOVIE
 	def self.gostream_scraper(html)
 		doc = Nokogiri::HTML.parse(html)

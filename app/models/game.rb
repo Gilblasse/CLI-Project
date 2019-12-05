@@ -37,7 +37,7 @@ class Game
     end
 
     def display_triva
-        puts File.open("question_mark.txt").read
+        puts File.open("pics/question_mark.txt").read
 		print "#{"\n\nQuestion #{self.question_count + 1}:".magenta}"
 		puts  "Score: #{self.score}/5".center(winsize.last / 1.3).cyan
 		puts self.display_question
@@ -74,7 +74,7 @@ class Game
     end
 
     def play
-        cli = CLI.new
+        cli = Top250MoviesEver::CLI.new
         cli.line_size = 80
         line = cli.line('-')
         until self.over?
