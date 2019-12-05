@@ -3,8 +3,9 @@ class Game
 
     def initialize(movie)
         @winsize = IO.console.winsize
+        @scraper = Scraper.new
         @actor_w_director = (movie.stars << movie.director).uniq
-        @stars = actor_w_director.map{|a| Scraper.start_scraping_stars(a.last)}
+        @stars = actor_w_director.map{|a| @scraper.find_or_scrape_star(a.last)}
         @bios = stars.map{|star| star.bio.gsub(/#{star.first_name}|#{star.last_name[0...-1]}\w+/,"____________")}
         @score = 0
         @turn_count = 0
