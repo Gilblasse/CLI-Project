@@ -26,6 +26,7 @@ class Star
         ]
     end
 
+    # constructor for updating instance data
     def update_info(update_attr_hash)
         update_attr_hash.each do |k,v| 
 			self.send("#{k}=",v)
