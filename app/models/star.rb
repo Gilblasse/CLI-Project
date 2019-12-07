@@ -23,6 +23,20 @@ class Star
         ]
     end
 
+    def update_info(update_attr_hash)
+        update_attr_hash.each do |k,v| 
+			self.send("#{k}=",v)
+		end
+    end
+
+    def movies
+		roles.map{|role| role.movie}.uniq
+	end
+
+	def roles
+		Role.all.select{|role| role.star == self }
+	end
+
     def first_name
         fullname.split(" ").first
     end

@@ -71,8 +71,8 @@ module Top250MoviesEver
 			when 4
 				main_menu
 			else
-				puts "Please Choose From The Options Outlined"
-				sorting_options
+				print_center ["Please Choose From The Options Outlined"]
+				sorting_menu
 			end
 		end
 
@@ -128,9 +128,8 @@ module Top250MoviesEver
 
 		#list all stars of selected movie
 		def list_stars
-			actors = movie_picked.stars.reject {|star| star.first.eql? movie_picked.director}
 			@line_size = ((winsize.last - 95) / 2)
-			rows = actors.map.with_index(1) {|actor,i| [i.to_s,actor.first]}
+			rows = movie_picked.stars.map.with_index(1) {|star,i| [i.to_s,star.fullname] } 
 
 			table = Terminal::Table.new :title => "More Info About Your Actor: select Available options (1-3) ".cyan,:headings => ["Num".cyan,"Top Actors".cyan], :rows => rows
 			table.style = { :padding_left => 3, :border_x => "=", :border_i => "*", :margin_left => line(" ")}
@@ -142,16 +141,17 @@ module Top250MoviesEver
 		# Shows choosen star information
 		def selected_star
 			input = make_index
-			star_url = movie_picked.stars[make_index][1] if input.between?(0,movie_picked.stars.size - 1)
+			# binding.pry
+			star_url = movie_picked.stars[input].url if input.between?(0,movie_picked.stars.size - 1)
 			list_stars if !input.between?(0,movie_picked.stars.size - 1)
-			star = @scraper.find_or_scrape_star(star_url)
+			star = @scraper.find_and_scrape_person(star_url)
 			puts star.display_info
 			continue(game_options,'2')
 		end
 
 		# Shows directors information
 		def display_director
-			director = @scraper.find_or_scrape_star(movie_picked.director.last)
+			director = @scraper.find_and_scrape_person(movie_picked.director.first.url)
 			puts director.display_info
 			continue(game_options,'2')
 		end

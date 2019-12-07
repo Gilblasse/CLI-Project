@@ -11,6 +11,18 @@ class Movie
 		@@all << self
 	end
 
+	def stars
+		roles.map{|role| role.star}
+	end
+
+	def director
+		roles.map{|role| role.director}.uniq
+	end
+
+	def roles
+		Role.all.select{|role| role.movie == self }
+	end
+
 	def get_selected_movie
 		gostream_site = "gostream.site"
 		browser = Watir::Browser.new(:chrome, {:chromeOptions => {:args => ['--headless', '--window-size=1200x600']}})
@@ -38,8 +50,8 @@ class Movie
 			"#{FONT_STYLE.asciify(self.title)}\n",
 			"\n#{self.title.upcase}\n#{self.subtext}",
 			"\n#{"Summary:".magenta} #{self.summary}\n",
-			"#{"Top 3 Actors:".magenta} #{self.stars.map{|e|e[0]}.join(", ")}",
-			"#{"Directors:".magenta} #{self.director.first}"
+			"#{"Top 3 Actors:".magenta} #{self.stars.map {|star| star.fullname }.join(', ')}",
+			"#{"Directors:".magenta} #{self.director.first.fullname}"
 		]
 	end
 
@@ -49,7 +61,7 @@ class Movie
 
 	def self.matching_titles
 		title = gets.chomp
-		cli = CLI.new
+		cli = Top250MoviesEver::CLI.new
 		cli.menu_a if title.eql? 'q'
 		white = Text::WhiteSimilarity.new
 		matching_movies = self.all.select {|movie| white.similarity(movie.title, title) >= 0.3}

@@ -4,8 +4,9 @@ class Game
     def initialize(movie)
         @winsize = IO.console.winsize
         @scraper = Scraper.new
-        @actor_w_director = (movie.stars << movie.director).uniq
-        @stars = actor_w_director.map{|a| @scraper.find_or_scrape_star(a.last)}
+        @actor_w_director = movie.stars.concat(movie.director).uniq
+        # binding.pry
+        @stars = actor_w_director.map{|a| @scraper.find_and_scrape_person(a.url)}
         @bios = stars.map{|star| star.bio.gsub(/#{star.first_name}|#{star.last_name[0...-1]}\w+/,"____________")}
         @score = 0
         @turn_count = 0
@@ -26,13 +27,25 @@ class Game
         @old_questions.include?(@bio_paragraph) ? pick_question : @bio_paragraph
     end
 
-    def check_answer(index)
-        @turn_count += 1
-        if bios[index] == @random_bio
-            add_score
-            "CORRECT".green
-        else 
-            "#{"Sorry, The Correct Answer Is:".red} #{answer.fullname}\n"
+    def reset_question
+        @question_count -= 1
+        @old_questions.pop
+        play
+    end
+
+    def check_answer
+        index = @triva_input.to_i - 1
+    
+        if index.between?(0,choices.split("|").size - 1)
+            @turn_count += 1
+            if bios[index] == @random_bio
+                add_score
+                "CORRECT".green
+            else 
+                "#{"Sorry, The Correct Answer Is:".red} #{answer.fullname}\n"
+            end
+        else
+            reset_question 
         end
     end
 
@@ -63,7 +76,7 @@ class Game
     end
     
     def over?
-        turn_count.eql? 5
+        turn_count.eql?(5) || @question_count.eql?(5)
     end
 
     def over_message
@@ -79,10 +92,10 @@ class Game
         line = cli.line('-')
         until self.over?
             self.display_triva
-            cli.print_center([line,self.choices,line])
-            triva_input = gets.chomp
-            break if triva_input == "q"
-            puts self.check_answer(triva_input.to_i - 1)
+            cli.print_center [line,self.choices,line]
+            @triva_input = gets.chomp
+            break if @triva_input == "q"
+            puts self.check_answer
         end
     end
 

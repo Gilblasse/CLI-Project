@@ -24,38 +24,56 @@ class Scraper
 		end
 	end
 
-	def second_page(movie)
+	def second_page(movie) # selected movie
+		@movie = movie 
 		@page = movie.url
 		scrape
 
 		@director_section = @doc.css(".plot_summary h4 + a")[0]
 		@stars_section = @doc.css('.credit_summary_item')[2].css("a")[0..-2]
 		@trailer = @doc.css(".slate a")[0]["href"]
-
-		movie.summary = @doc.css('.summary_text').text.strip
-		movie.director = [@director_section.text, @director_section['href']]
-		movie.stars = @stars_section.map{ |e| [ e.text,e['href'] ] }
-		movie.subtext = @doc.css('.subtext').text.split(/[|]/).map{|e| e.strip}.join(" | ").gsub(/\n/,"")
-		movie.trailer = "#{@imdb_url}#{@trailer}" if @trailer
-
-		movie
+		
+		scrape_stars_and_director
+		update_movie
+		create_roles
+		
+		@movie
 	end
+
+	def scrape_stars_and_director
+		@stars = @stars_section.map {|s| Star.new({fullname: s.text, url: s['href']}) }
+		@director = Director.new(fullname: @director_section.text, url: @director_section['href'])
+	end
+	
+	def update_movie
+		@movie.summary = @doc.css('.summary_text').text.strip
+		@movie.subtext = @doc.css('.subtext').text.split(/[|]/).map{|e| e.strip}.join(" | ").gsub(/\n/,"")
+		@movie.trailer = "#{@imdb_url}#{@trailer}" if @trailer
+	end
+
+	def create_roles
+		@stars.each{|star| Role.new(star,@director,@movie) }
+		# binding.pry
+	end
+
+
+
+
 
 
 	# STAR SECTION
-	def find_or_scrape_star(url)
+	def find_and_scrape_person(url)
 		@page = url
-		star = Star.find_star_by_url(@page)
-		if star.nil?
-			scrape
 
-			stars_hash = stars_page_hash
-			star = Star.new(stars_hash)
-		end
-			star
+		person = Star.find_star_by_url(@page) || Director.find_star_by_url(@page)
+		scrape
+
+		person.update_info(person_page_hash)
+		
+		person
 	end
 
-	def stars_page_hash
+	def person_page_hash
 		{
 			fullname: @doc.css(".itemprop")[0].text,
 			subtext: @doc.css(".itemprop")[1..-1].text.gsub(/(?!^\n)\n/," | ").gsub(/\n/,""),
