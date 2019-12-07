@@ -144,14 +144,14 @@ module Top250MoviesEver
 			# binding.pry
 			star_url = movie_picked.stars[input].url if input.between?(0,movie_picked.stars.size - 1)
 			list_stars if !input.between?(0,movie_picked.stars.size - 1)
-			star = @scraper.find_and_scrape_person(star_url)
+			star = @scraper.find_or_scrape_person(star_url)
 			puts star.display_info
 			continue(game_options,'2')
 		end
 
 		# Shows directors information
 		def display_director
-			director = @scraper.find_and_scrape_person(movie_picked.director.first.url)
+			director = @scraper.find_or_scrape_person(movie_picked.director.first.url)
 			puts director.display_info
 			continue(game_options,'2')
 		end

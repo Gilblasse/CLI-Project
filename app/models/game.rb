@@ -6,7 +6,7 @@ class Game
         @scraper = Scraper.new
         @actor_w_director = movie.stars.concat(movie.director).uniq
         # binding.pry
-        @stars = actor_w_director.map{|a| @scraper.find_and_scrape_person(a.url)}
+        @stars = actor_w_director.map{|a| @scraper.find_or_scrape_person(a.url)}
         @bios = stars.map{|star| star.bio.gsub(/#{star.first_name}|#{star.last_name[0...-1]}\w+/,"____________")}
         @score = 0
         @turn_count = 0

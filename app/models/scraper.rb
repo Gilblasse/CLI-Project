@@ -40,6 +40,8 @@ class Scraper
 		@movie
 	end
 
+
+	# Create Stars and Directors
 	def scrape_stars_and_director
 		@stars = @stars_section.map {|s| Star.new({fullname: s.text, url: s['href']}) }
 		@director = Director.new(fullname: @director_section.text, url: @director_section['href'])
@@ -53,7 +55,6 @@ class Scraper
 
 	def create_roles
 		@stars.each{|star| Role.new(star,@director,@movie) }
-		# binding.pry
 	end
 
 
@@ -61,19 +62,17 @@ class Scraper
 
 
 
-	# STAR SECTION
-	def find_and_scrape_person(url)
+	# STAR & DIRECTOR SECTION
+	def find_or_scrape_person(url)
 		@page = url
-
 		person = Star.find_star_by_url(@page) || Director.find_star_by_url(@page)
-		scrape
 
-		person.update_info(person_page_hash)
-		
+		person.update_info(person_page_hash) if person.bio.nil?
 		person
 	end
 
 	def person_page_hash
+		scrape
 		{
 			fullname: @doc.css(".itemprop")[0].text,
 			subtext: @doc.css(".itemprop")[1..-1].text.gsub(/(?!^\n)\n/," | ").gsub(/\n/,""),
@@ -98,4 +97,6 @@ class Scraper
 		movies_list = doc.css(".movies-list-full .ml-item")
 		movies_list.map{|movie| [movie.css("a")[0]['oldtitle'],movie.css("a")[0]['href']] }.to_h
 	end
+
+
 end
