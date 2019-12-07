@@ -79,10 +79,10 @@ class Scraper
 			subtext: @doc.css(".itemprop")[1..-1].text.gsub(/(?!^\n)\n/," | ").gsub(/\n/,""),
 			known_for: @doc.css("#knownfor .knownfor-title-role a").map{|e|e.text}
 		}
-		.merge(star_bio_page_hash)
+		.merge(person_bio_page_hash)
 	end
 
-	def star_bio_page_hash
+	def person_bio_page_hash
 		@page = "#{@page}bio?ref_=nm_ov_bio_sm"
 		scrape
 		{
