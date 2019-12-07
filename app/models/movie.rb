@@ -1,4 +1,7 @@
 class Movie
+	extend Memorable::ClassMethods
+	include Memorable::InstanceMethods
+	include Connect
 	attr_accessor :title, :year, :url, :rating,:summary,:director,:stars,:film_rating,:subtext,:trailer,:play_movie
 	FONT_Style_A = Artii::Base.new :font => 'cricket'
 	FONT_STYLE = Artii::Base.new :font => 'cursive'
@@ -8,7 +11,7 @@ class Movie
 		movie_hash.each do |k,v| 
 			self.send("#{k}=",v)
 		end
-		@@all << self
+		save
 	end
 
 	def stars
@@ -17,10 +20,6 @@ class Movie
 
 	def director
 		roles.map{|role| role.director}.uniq
-	end
-
-	def roles
-		Role.all.select{|role| role.movie == self }
 	end
 
 	def get_selected_movie
@@ -55,9 +54,6 @@ class Movie
 		]
 	end
 
-	def self.all
-		@@all
-	end
 
 	def self.matching_titles
 		title = gets.chomp
@@ -73,6 +69,10 @@ class Movie
 			"!! Sorry... Movie Not Found in IMDB Top 250 List !!\n",
 			"Please Try Again.  ☹"
 		]
+	end
+
+	def self.all
+		@@all
 	end
 
 	def self.find_by_year(input)

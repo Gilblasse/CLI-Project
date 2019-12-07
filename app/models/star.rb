@@ -1,9 +1,12 @@
 class Star
+    extend Memorable::ClassMethods
+    include Memorable::InstanceMethods
+    include Connect
 	attr_accessor :fullname, :url, :bio,:summary,:subtext,:born,:known_for
 	@@all = []
 
-	def initialize(movie_hash)
-		movie_hash.each do |k,v| 
+    def initialize(star_hash)
+		star_hash.each do |k,v| 
 			self.send("#{k}=",v)
 		end
 		save
@@ -33,20 +36,12 @@ class Star
 		roles.map{|role| role.movie}.uniq
 	end
 
-	def roles
-		Role.all.select{|role| role.star == self }
-	end
-
     def first_name
         fullname.split(" ").first
     end
 
     def last_name
         fullname.split(" ").last
-    end
-
-    def save
-        @@all << self
     end
 
     def self.find_star_by_url(url)

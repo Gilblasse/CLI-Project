@@ -41,6 +41,7 @@ class Scraper
 	end
 
 
+
 	# Create Stars and Directors
 	def scrape_stars_and_director
 		@stars = @stars_section.map {|s| Star.new({fullname: s.text, url: s['href']}) }

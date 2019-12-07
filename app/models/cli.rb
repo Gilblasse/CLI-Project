@@ -10,7 +10,6 @@ module Top250MoviesEver
 			@main_menu_array = %w(Movies_List Search Quit)
 			@selected_movie_array =  %w(Play_Game Play_Trailer Play_Movie Actors Director)
 			@game_menu_array =  %w(Play_Again Back_To_Movie Quit)
-			@imbd_site = "https://www.imdb.com"
 			@sort = ""
 			activate_menu_options
 		end
@@ -94,7 +93,9 @@ module Top250MoviesEver
 
 		def list_movies 
 			puts create_movie_table
-			@movie_picked = @scraper.second_page(selected_movie)
+			movie = selected_movie
+			main_menu if movie.nil?
+			@movie_picked = @scraper.second_page(movie)
 			display_selected_movie
 		end
 
@@ -107,7 +108,8 @@ module Top250MoviesEver
 		#Finds selected movie in movie array
 		def selected_movie
 			input = make_index
-			input.between?(0,@list_of_movies.size) ? @list_of_movies[input] : main_menu
+			main_menu if input.nil?
+			@list_of_movies[input] if input.between?(0,@list_of_movies.size - 1)
 		end
 
 		#Shows info about selected movie
@@ -141,7 +143,6 @@ module Top250MoviesEver
 		# Shows choosen star information
 		def selected_star
 			input = make_index
-			# binding.pry
 			star_url = movie_picked.stars[input].url if input.between?(0,movie_picked.stars.size - 1)
 			list_stars if !input.between?(0,movie_picked.stars.size - 1)
 			star = @scraper.find_or_scrape_person(star_url)
