@@ -57,7 +57,7 @@ class Movie
 
 	def self.matching_titles
 		title = gets.chomp
-		cli = Top250MoviesEver::CLI.new
+		cli = Top250Movies::CLI.new
 		cli.menu_a if title.eql? 'q'
 		white = Text::WhiteSimilarity.new
 		matching_movies = self.all.select {|movie| white.similarity(movie.title, title) >= 0.3}

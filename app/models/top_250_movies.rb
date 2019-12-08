@@ -1,4 +1,5 @@
-module Top250MoviesEver
+require_relative "./top_250_movies/version.rb"
+module Top250Movies
 
 	class CLI
 		attr_accessor :winsize, :main_menu_array , :selected_movie_array, :imbd_site,:main_menu_options,:selected_movie_options,

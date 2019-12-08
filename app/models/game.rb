@@ -87,7 +87,7 @@ class Game
     end
 
     def play
-        cli = Top250MoviesEver::CLI.new
+        cli = Top250Movies::CLI.new
         cli.line_size = 80
         line = cli.line('-')
         until self.over?
