@@ -11,5 +11,5 @@ And then excute:
 Or install it yourslef as:
 ` $ gem install top250movies `
 
-# Usage
+## Usage
 Follow this video guide which demonstrates how to use this gem. https://youtu.be/SYsjSVnWnkI
