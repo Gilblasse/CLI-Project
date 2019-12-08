@@ -16,4 +16,7 @@ Gem::Specification.new do |s|
 
     s.add_development_dependency "bundler", "~> 2.0", ">= 2.0.2"
     s.add_development_dependency "rspec", "~> 3.9"
+    s.add_dependency "nokogiri", "~> 1.10", ">= 1.10.7"
+    s.add_dependency "open_uri_redirections", "~> 0.2.1"
+    s.add_dependency "colorize"
   end
