@@ -4,7 +4,7 @@ module Top250Movies
 	class CLI
 		attr_accessor :winsize, :main_menu_array , :selected_movie_array, :imbd_site,:main_menu_options,:selected_movie_options,
 					:movie_picked,:game_options,:game_menu_array,:error_message,:options,:menu_arr,:line_size,:heading,:error_message
-		# PAGER = TTY::Pager.new
+		PAGER = TTY::Pager.new
 
 		def initialize
 			@winsize = IO.console.winsize
@@ -25,8 +25,8 @@ module Top250Movies
 		def main_menu
 			puts "#{File.open("pics/imdb.txt").read}\n\n\n".center(winsize.last)
 			@options,@menu_arr,@line_size = main_menu_options,main_menu_array,38
-			@heading = "Select A Menu Option From 1-3 " 
-			@error_message = "Please select from The Avialable options between 1 - 3"
+			@heading = "Select A Menu Option From 1-#{main_menu_array.count} " 
+			@error_message = "Please select from The Avialable options between 1 - #{main_menu_array.count}"
 			create_print_menu
 			menu_switch
 		end
@@ -71,6 +71,7 @@ module Top250Movies
 			when 4
 				main_menu
 			else
+				system("clear")
 				print_center ["Please Choose From The Options Outlined"]
 				sorting_menu
 			end
@@ -115,6 +116,7 @@ module Top250Movies
 
 		#Shows info about selected movie
 		def display_selected_movie
+			system("clear")
 			puts movie_picked.display_movie_info
 			selected_movie_menu
 		end
@@ -147,6 +149,7 @@ module Top250Movies
 			star_url = movie_picked.stars[input].url if input.between?(0,movie_picked.stars.size - 1)
 			list_stars if !input.between?(0,movie_picked.stars.size - 1)
 			star = @scraper.find_or_scrape_person(star_url)
+			system("clear")
 			puts star.display_info
 			continue(game_options,'2')
 		end
@@ -154,12 +157,14 @@ module Top250Movies
 		# Shows directors information
 		def display_director
 			director = @scraper.find_or_scrape_person(movie_picked.director.first.url)
+			system("clear")
 			puts director.display_info
 			continue(game_options,'2')
 		end
 
 		def play_game
 			game = Game.new(movie_picked)
+			system("clear")
 			game.play
 			puts game.over_message
 			game_menu
