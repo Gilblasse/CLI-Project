@@ -4,7 +4,7 @@ source "https://rubygems.org"
 gem 'pry'
 gem 'require_all'
 
-gem "nokogiri", "~> 1.10"
+gem "nokogiri", "~> 1.12"
 
 gem 'colorize', '~> 0.8.1'
 
